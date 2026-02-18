@@ -63,5 +63,7 @@ func (s *MemoryStorage) Delete(id int) error {
 		return ErrMonitorNotFound
 	}
 
+	delete(s.monitors, id)
+
 	return nil
 }

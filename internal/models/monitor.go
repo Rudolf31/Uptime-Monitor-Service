@@ -1,6 +1,6 @@
 package models
 
-import "strings"
+import "net/url"
 
 type Monitor struct {
 	ID       int    `json:"id"`
@@ -13,12 +13,20 @@ func (m *Monitor) Validate() error {
 	if m.URL == "" {
 		return ErrInvalidData
 	}
-	if !strings.HasPrefix(m.URL, "http://") && !strings.HasPrefix(m.URL, "https://") {
+
+	parsed, err := url.ParseRequestURI(m.URL)
+	if err != nil {
 		return ErrInvalidData
 	}
+
+	if parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return ErrInvalidData
+	}
+
 	if m.Interval <= 0 {
 		return ErrInvalidData
 	}
+
 	return nil
 }
 
