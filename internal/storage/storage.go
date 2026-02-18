@@ -31,7 +31,7 @@ func (s *MemoryStorage) Create(monitor *models.Monitor) error {
 
 func (s *MemoryStorage) GetAll() ([]*models.Monitor, error) {
 	s.mu.RLock()
-	defer s.mu.Unlock()
+	defer s.mu.RUnlock()
 
 	monitors := make([]*models.Monitor, 0, len(s.monitors))
 	for _, m := range s.monitors {

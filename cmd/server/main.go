@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"uptime-monitor/internal/handlers"
+	"uptime-monitor/internal/storage"
 )
 
 func main() {
@@ -23,14 +25,15 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	// store := storage.NewStorage()
+	store := storage.NewStorage()
+	monitorHandler := handlers.NewMonitorHandler(store)
 
 	mux := http.NewServeMux()
 
-	// mux.Handle("POST /monitors")
-	// mux.Handle("GET /monitors")
-	// mux.Handle("GET /monitors/{id}")
-	// mux.Handle("DELETE /monitors/{id}")
+	mux.Handle("POST /monitors", http.HandlerFunc(monitorHandler.Create))
+	mux.Handle("GET /monitors", http.HandlerFunc(monitorHandler.List))
+	mux.Handle("GET /monitors/{id}", http.HandlerFunc(monitorHandler.Get))
+	mux.Handle("DELETE /monitors/{id}", http.HandlerFunc(monitorHandler.Delete))
 
 	server := &http.Server{
 		Addr:         ":" + port,
