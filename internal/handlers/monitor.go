@@ -46,13 +46,19 @@ func (h *MonitorHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MonitorHandler) List(w http.ResponseWriter, r *http.Request) {
-	monitors, err := h.storage.GetAll()
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to fetch monitors")
-		return
+	monitors, _ := h.storage.GetAll()
+
+	resp := make([]models.MonitorResponse, 0, len(monitors))
+	for _, m := range monitors {
+		resp = append(resp, models.MonitorResponse{
+			ID:       m.ID,
+			URL:      m.URL,
+			Interval: m.Interval,
+			Status:   m.Status,
+		})
 	}
 
-	respondWithJSON(w, http.StatusOK, monitors)
+	respondWithJSON(w, http.StatusOK, resp)
 }
 
 func (h *MonitorHandler) Get(w http.ResponseWriter, r *http.Request) {
