@@ -2,6 +2,7 @@ package storage
 
 import (
 	"sync"
+	"time"
 	"uptime-monitor/internal/models"
 )
 
@@ -64,6 +65,52 @@ func (s *MemoryStorage) Delete(id int) error {
 	}
 
 	delete(s.monitors, id)
+
+	return nil
+}
+
+func (s *MemoryStorage) UpdateCheckResult(
+	id int,
+	status string,
+	lastCheck time.Time,
+	responceTime int64,
+) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	monitor, exists := s.monitors[id]
+	if !exists {
+		return ErrMonitorNotFound
+	}
+
+	monitor.Status = status
+	monitor.LastCheck = lastCheck
+	monitor.ResponseTime = responceTime
+
+	note := &models.Note{
+		Status:       status,
+		CheckTime:    lastCheck,
+		ResponseTime: responceTime,
+	}
+
+	monitor.History = append(monitor.History, note)
+	if len(monitor.History) > 3 {
+		monitor.History = monitor.History[1:]
+	}
+
+	return nil
+}
+
+func (s *MemoryStorage) UpdateNextCheck(id int, newTime time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	monitor, exists := s.monitors[id]
+	if !exists {
+		return ErrMonitorNotFound
+	}
+
+	monitor.NextCheck = newTime
 
 	return nil
 }
