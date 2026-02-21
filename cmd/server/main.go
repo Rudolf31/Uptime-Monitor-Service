@@ -10,6 +10,7 @@ import (
 	"time"
 	"uptime-monitor/internal/handlers"
 	"uptime-monitor/internal/storage"
+	"uptime-monitor/internal/worker"
 )
 
 func main() {
@@ -26,6 +27,15 @@ func main() {
 	slog.SetDefault(logger)
 
 	store := storage.NewStorage()
+
+	pool := worker.NewPool(store)
+	scheduler := worker.NewScheduler(store, pool.Jobs())
+
+	ctx, cancelMain := context.WithCancel(context.Background())
+
+	go scheduler.Start(ctx)
+	go pool.Start(ctx)
+
 	monitorHandler := handlers.NewMonitorHandler(store)
 
 	mux := http.NewServeMux()
@@ -40,7 +50,7 @@ func main() {
 		Handler:      mux,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  69 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	go func() {
@@ -63,10 +73,11 @@ func main() {
 		"signal", sig,
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	// Stopping the server
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("Ошибка при shutdown",
 			"error", err,
 			"action", "force_close",
@@ -74,6 +85,12 @@ func main() {
 
 		server.Close()
 	}
+
+	// Stopping the workers
+	cancelMain()
+
+	// Waiting for workers
+	pool.Stop()
 
 	logger.Info("Сервер остановлен")
 }

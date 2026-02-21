@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 	"uptime-monitor/internal/models"
 	"uptime-monitor/internal/storage"
 )
@@ -27,9 +28,10 @@ func (h *MonitorHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	monitor := &models.Monitor{
-		URL:      req.URL,
-		Interval: req.Interval,
-		Status:   "active",
+		URL:       req.URL,
+		Interval:  req.Interval,
+		Status:    "pending",
+		NextCheck: time.Now(),
 	}
 
 	if err := monitor.Validate(); err != nil {

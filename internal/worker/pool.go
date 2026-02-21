@@ -27,7 +27,7 @@ func NewPool(storage *storage.MemoryStorage) *Pool {
 }
 
 func (p *Pool) Start(ctx context.Context) {
-	for range 5 {
+	for i := 0; i < 5; i++ {
 		p.wg.Add(1)
 		go p.worker(ctx)
 	}
@@ -68,6 +68,10 @@ func (p *Pool) check(id int) {
 	if err != nil {
 		slog.Error("failed to update monitor", "error", err)
 	}
+}
+
+func (p *Pool) Jobs() chan int {
+	return p.jobs
 }
 
 func (p *Pool) Stop() {

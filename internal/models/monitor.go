@@ -10,10 +10,10 @@ type Monitor struct {
 	URL          string    `json:"url"`
 	Interval     int       `json:"interval"`
 	Status       string    `json:"status"`
-	History      []*Note   `json:"history,omitempty"`
 	LastCheck    time.Time `json:"last_check,omitempty"`
 	NextCheck    time.Time `json:"-"`
-	ResponseTime int64     `json:"responce_time"`
+	ResponseTime int64     `json:"response_time,omitempty"`
+	History      []*Note   `json:"history,omitempty"`
 }
 
 type MonitorResponse struct {
