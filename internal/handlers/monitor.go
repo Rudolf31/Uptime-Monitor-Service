@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -73,7 +74,7 @@ func (h *MonitorHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	monitor, err := h.storage.GetByID(id)
 	if err != nil {
-		if err == storage.ErrMonitorNotFound {
+		if errors.Is(err, storage.ErrMonitorNotFound) {
 			respondWithError(w, http.StatusNotFound, "Monitor not found")
 			return
 		}
@@ -93,7 +94,7 @@ func (h *MonitorHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.storage.Delete(id); err != nil {
-		if err == storage.ErrMonitorNotFound {
+		if errors.Is(err, storage.ErrMonitorNotFound) {
 			respondWithError(w, http.StatusNotFound, "Monitor not found")
 			return
 		}
