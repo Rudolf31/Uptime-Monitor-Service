@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 	"uptime-monitor/internal/handlers"
+	"uptime-monitor/internal/middleware"
 	"uptime-monitor/internal/storage"
 	"uptime-monitor/internal/worker"
 )
@@ -18,7 +20,6 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 
@@ -31,19 +32,30 @@ func main() {
 	pool := worker.NewPool(store)
 	scheduler := worker.NewScheduler(store, pool.Jobs())
 
-	ctx, cancelMain := context.WithCancel(context.Background())
+	poolCtx, cancelPool := context.WithCancel(context.Background())
+	schedulerCtx, cancelScheduler := context.WithCancel(context.Background())
 
-	go scheduler.Start(ctx)
-	go pool.Start(ctx)
+	var schedulerWg sync.WaitGroup
+	schedulerWg.Add(1)
+	go func() {
+		defer schedulerWg.Done()
+		scheduler.Start(schedulerCtx)
+	}()
+	go pool.Start(poolCtx)
 
 	monitorHandler := handlers.NewMonitorHandler(store)
 
 	mux := http.NewServeMux()
 
-	mux.Handle("POST /monitors", http.HandlerFunc(monitorHandler.Create))
-	mux.Handle("GET /monitors", http.HandlerFunc(monitorHandler.List))
-	mux.Handle("GET /monitors/{id}", http.HandlerFunc(monitorHandler.Get))
-	mux.Handle("DELETE /monitors/{id}", http.HandlerFunc(monitorHandler.Delete))
+	commonMiddleware := middleware.Chain(
+		middleware.LoggingMiddleware,
+		middleware.RecoveryMiddleware,
+	)
+
+	mux.Handle("POST /monitors", commonMiddleware(http.HandlerFunc(monitorHandler.Create)))
+	mux.Handle("GET /monitors", commonMiddleware(http.HandlerFunc(monitorHandler.List)))
+	mux.Handle("GET /monitors/{id}", commonMiddleware(http.HandlerFunc(monitorHandler.Get)))
+	mux.Handle("DELETE /monitors/{id}", commonMiddleware(http.HandlerFunc(monitorHandler.Delete)))
 
 	server := &http.Server{
 		Addr:         ":" + port,
@@ -87,7 +99,11 @@ func main() {
 	}
 
 	// Stopping the workers
-	cancelMain()
+	cancelScheduler()
+	schedulerWg.Wait()
+
+	// Stopping the pool
+	cancelPool()
 
 	// Waiting for workers
 	pool.Stop()
