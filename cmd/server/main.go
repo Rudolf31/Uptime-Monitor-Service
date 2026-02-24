@@ -48,8 +48,8 @@ func main() {
 	mux := http.NewServeMux()
 
 	commonMiddleware := middleware.Chain(
-		middleware.LoggingMiddleware,
 		middleware.RecoveryMiddleware,
+		middleware.LoggingMiddleware,
 	)
 
 	mux.Handle("POST /monitors", commonMiddleware(http.HandlerFunc(monitorHandler.Create)))
