@@ -9,10 +9,14 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"uptime-monitor/internal/db"
 	"uptime-monitor/internal/handlers"
 	"uptime-monitor/internal/middleware"
 	"uptime-monitor/internal/storage"
 	"uptime-monitor/internal/worker"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -20,14 +24,27 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
 
+	godotenv.Load()
+
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level:     slog.LevelInfo,
 		AddSource: true,
 	}))
 	slog.SetDefault(logger)
 
-	store := storage.NewMemoryStorage()
+	var store storage.Storage
+	switch os.Getenv("STORAGE") {
+	case "postgres":
+		sqlDB, err := db.NewDBFromEnv()
+		if err != nil {
+			logger.Error("Ошибка подключения к Postgres", "error", err)
+			return
+		}
+		store = storage.NewPostgresStorage(sqlDB)
+	default:
+		store = storage.NewMemoryStorage()
+	}
 
 	pool := worker.NewPool(store)
 	scheduler := worker.NewScheduler(store, pool.Jobs())
@@ -66,21 +83,21 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("server started",
+		logger.Info("Server started",
 			"url", "http://localhost:"+port,
 			"port", port,
 		)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("Ошибка запуска сервера",
-				"Error", err,
+				"error", err,
 			)
 		}
 	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
 	sig := <-sigChan
+
 	logger.Info("Начинаем graceful shutdown",
 		"signal", sig,
 	)
@@ -88,24 +105,18 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// Stopping the server
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		logger.Error("Ошибка при shutdown",
 			"error", err,
 			"action", "force_close",
 		)
-
 		server.Close()
 	}
 
-	// Stopping the workers
 	cancelScheduler()
 	schedulerWg.Wait()
 
-	// Stopping the pool
 	cancelPool()
-
-	// Waiting for workers
 	pool.Stop()
 
 	logger.Info("Сервер остановлен")

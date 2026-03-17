@@ -84,8 +84,8 @@ func (s *MemoryStorage) UpdateCheckResult(
 	}
 
 	monitor.Status = status
-	monitor.LastCheck = lastCheck
-	monitor.ResponseTime = responceTime
+	monitor.LastCheck = &lastCheck
+	monitor.ResponseTime = &responceTime
 
 	note := &models.Note{
 		Status:       status,
@@ -110,7 +110,7 @@ func (s *MemoryStorage) UpdateNextCheck(id int, newTime time.Time) error {
 		return ErrMonitorNotFound
 	}
 
-	monitor.NextCheck = newTime
+	monitor.NextCheck = &newTime
 
 	return nil
 }

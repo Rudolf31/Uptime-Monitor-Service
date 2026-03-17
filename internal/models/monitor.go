@@ -6,14 +6,14 @@ import (
 )
 
 type Monitor struct {
-	ID           int       `json:"id"`
-	URL          string    `json:"url"`
-	Interval     int       `json:"interval"`
-	Status       string    `json:"status"`
-	LastCheck    time.Time `json:"last_check,omitempty"`
-	NextCheck    time.Time `json:"-"`
-	ResponseTime int64     `json:"response_time,omitempty"`
-	History      []*Note   `json:"history,omitempty"`
+	ID           int        `json:"id" db:"id"`
+	URL          string     `json:"url" db:"url"`
+	Interval     int        `json:"interval" db:"interval"`
+	Status       string     `json:"status" db:"status"`
+	LastCheck    *time.Time `json:"last_check,omitempty" db:"last_check"`
+	NextCheck    *time.Time `json:"next_check,omitempty" db:"next_check"`
+	ResponseTime *int64     `json:"response_time,omitempty" db:"response_time"`
+	History      []*Note    `json:"history,omitempty" db:"-"`
 }
 
 type MonitorResponse struct {

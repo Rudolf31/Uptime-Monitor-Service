@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,35 +13,54 @@ import (
 
 type MonitorHandler struct {
 	storage storage.Storage
+	logger  *slog.Logger
 }
 
 func NewMonitorHandler(s storage.Storage) *MonitorHandler {
 	return &MonitorHandler{
 		storage: s,
+		logger:  slog.Default(),
 	}
 }
 
 func (h *MonitorHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var req models.CreateMonitorRequest
+	defer r.Body.Close()
 
+	var req models.CreateMonitorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Warn("invalid create payload", "err", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
+	if req.Interval == 0 || req.Interval < 30 {
+		req.Interval = 30
+	}
+	status := req.Status
+	if status == "" {
+		status = "pending"
+	}
+
+	now := time.Now()
+	next := now
+
 	monitor := &models.Monitor{
-		URL:       req.URL,
-		Interval:  req.Interval,
-		Status:    "pending",
-		NextCheck: time.Now(),
+		URL:          req.URL,
+		Interval:     req.Interval,
+		Status:       status,
+		LastCheck:    &now,
+		NextCheck:    &next,
+		ResponseTime: nil,
 	}
 
 	if err := monitor.Validate(); err != nil {
+		slog.Warn("validation failed", "err", err, "url", monitor.URL)
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.storage.Create(monitor); err != nil {
+		slog.Error("failed to create monitor", "err", err, "url", monitor.URL)
 		respondWithError(w, http.StatusInternalServerError, "Failed to create monitor")
 		return
 	}

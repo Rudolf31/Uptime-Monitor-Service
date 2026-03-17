@@ -16,7 +16,7 @@ func TestSchedulerCheckTime(t *testing.T) {
 	monitor := &models.Monitor{
 		URL:       "https://example.com",
 		Interval:  10,
-		NextCheck: time.Now().Add(-1 * time.Second),
+		NextCheck: func() *time.Time { t := time.Now().Add(-1 * time.Second); return &t }(),
 	}
 
 	store.Create(monitor)

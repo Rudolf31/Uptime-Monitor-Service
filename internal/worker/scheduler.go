@@ -41,7 +41,7 @@ func (s *Scheduler) CheckTime() {
 	}
 
 	for _, monitor := range monitors {
-		if now.After(monitor.NextCheck) {
+		if now.After(*monitor.NextCheck) {
 			nextCheck := now.Add(time.Duration(monitor.Interval) * time.Second)
 			s.storage.UpdateNextCheck(monitor.ID, nextCheck)
 
