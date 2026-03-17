@@ -38,7 +38,7 @@ func main() {
 	case "postgres":
 		sqlDB, err := db.NewDBFromEnv()
 		if err != nil {
-			logger.Error("Ошибка подключения к Postgres", "error", err)
+			logger.Error("Failed to connect to Postgres", "error", err)
 			return
 		}
 		store = storage.NewPostgresStorage(sqlDB)
@@ -83,12 +83,17 @@ func main() {
 	}
 
 	go func() {
+		storage := os.Getenv("STORAGE")
+		if storage == "" {
+			storage = "memory"
+		}
 		logger.Info("Server started",
 			"url", "http://localhost:"+port,
 			"port", port,
+			"storage", storage,
 		)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Error("Ошибка запуска сервера",
+			logger.Error("Failed to start server",
 				"error", err,
 			)
 		}
@@ -98,7 +103,7 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-sigChan
 
-	logger.Info("Начинаем graceful shutdown",
+	logger.Info("Starting graceful shutdown",
 		"signal", sig,
 	)
 
@@ -106,7 +111,7 @@ func main() {
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		logger.Error("Ошибка при shutdown",
+		logger.Error("Failed to shutdown server",
 			"error", err,
 			"action", "force_close",
 		)
@@ -119,5 +124,5 @@ func main() {
 	cancelPool()
 	pool.Stop()
 
-	logger.Info("Сервер остановлен")
+	logger.Info("Server stopped")
 }
