@@ -8,7 +8,7 @@ import (
 )
 
 func TestStorageConcurrentCreate(t *testing.T) {
-	store := NewStorage()
+	store := NewMemoryStorage()
 
 	const count = 1000
 	var wg sync.WaitGroup
@@ -35,7 +35,7 @@ func TestStorageConcurrentCreate(t *testing.T) {
 }
 
 func TestStorageConcurrentMixed(t *testing.T) {
-	store := NewStorage()
+	store := NewMemoryStorage()
 
 	const count = 1000
 	var wg sync.WaitGroup

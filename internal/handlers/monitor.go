@@ -11,10 +11,10 @@ import (
 )
 
 type MonitorHandler struct {
-	storage *storage.MemoryStorage
+	storage storage.Storage
 }
 
-func NewMonitorHandler(s *storage.MemoryStorage) *MonitorHandler {
+func NewMonitorHandler(s storage.Storage) *MonitorHandler {
 	return &MonitorHandler{
 		storage: s,
 	}

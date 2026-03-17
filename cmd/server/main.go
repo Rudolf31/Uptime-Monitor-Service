@@ -27,7 +27,7 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	store := storage.NewStorage()
+	store := storage.NewMemoryStorage()
 
 	pool := worker.NewPool(store)
 	scheduler := worker.NewScheduler(store, pool.Jobs())

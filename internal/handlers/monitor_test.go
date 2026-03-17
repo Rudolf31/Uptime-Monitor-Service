@@ -202,7 +202,7 @@ func TestDeleteMonitorFailed(t *testing.T) {
 }
 
 func CreateTestServer() *httptest.Server {
-	storage := storage.NewStorage()
+	storage := storage.NewMemoryStorage()
 	monitorHandler := NewMonitorHandler(storage)
 
 	mux := http.NewServeMux()

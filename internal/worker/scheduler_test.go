@@ -8,7 +8,7 @@ import (
 )
 
 func TestSchedulerCheckTime(t *testing.T) {
-	store := storage.NewStorage()
+	store := storage.NewMemoryStorage()
 	jobs := make(chan int, 1)
 
 	scheduler := NewScheduler(store, jobs)

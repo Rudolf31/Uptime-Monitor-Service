@@ -8,11 +8,11 @@ import (
 )
 
 type Scheduler struct {
-	storage *storage.MemoryStorage
+	storage storage.Storage
 	jobs    chan<- int
 }
 
-func NewScheduler(storage *storage.MemoryStorage, jobs chan<- int) *Scheduler {
+func NewScheduler(storage storage.Storage, jobs chan<- int) *Scheduler {
 	return &Scheduler{
 		storage: storage,
 		jobs:    jobs, // Need pool.jobs

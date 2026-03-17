@@ -12,11 +12,11 @@ import (
 type Pool struct {
 	jobs    chan int
 	wg      sync.WaitGroup
-	storage *storage.MemoryStorage
+	storage storage.Storage
 	client  *http.Client
 }
 
-func NewPool(storage *storage.MemoryStorage) *Pool {
+func NewPool(storage storage.Storage) *Pool {
 	return &Pool{
 		jobs:    make(chan int),
 		storage: storage,
